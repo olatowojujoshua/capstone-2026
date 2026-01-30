@@ -8,7 +8,7 @@ The analysis covers **January–December 2021**, comprising approximately **178 
 
 The dataset is treated as **observational administrative data**. No pricing rules are modified or simulated; all analyses are based strictly on observed fares.
 
----
+
 
 ## Data Ingestion Strategy
 Due to the large size of the dataset (~4.7 GB across 12 months), raw data are processed **one month at a time** using a script-based pipeline. This design ensures:
@@ -18,7 +18,7 @@ Due to the large size of the dataset (~4.7 GB across 12 months), raw data are pr
 
 Each raw monthly file is cleaned independently and saved as a compressed Parquet file in the interim data layer.
 
----
+
 
 ## Cleaning Rules and Validation Checks
 
@@ -60,7 +60,7 @@ To limit the influence of extreme values without distorting distributions, conse
 
 These thresholds were reported and applied consistently during modeling.
 
----
+
 
 ## Data Quality Results (January–December 2021)
 processed 178 million trips
@@ -79,7 +79,6 @@ Average pickup delays ranged from approximately **4 to 6 minutes**, consistent w
 ### Stability of Distributions
 Winsorization thresholds evolved smoothly across months, reflecting seasonal demand changes and congestion patterns rather than data corruption. No abrupt shifts in trip length, duration, or fare distributions were observed.
 
----
 
 ## Interpretation and Implications
 
@@ -92,7 +91,6 @@ This supports the validity of subsequent analyses, including:
 
 The conservative cleaning approach ensures that results reflect **true observed pricing behavior** rather than artifacts of preprocessing.
 
----
 
 ## Reproducibility
 All data quality checks and preprocessing steps are fully reproducible using script-based workflows. A per-month data quality report (`data_quality_report.csv`) is generated to document row counts, removal reasons, and outlier thresholds, ensuring transparency and auditability.
