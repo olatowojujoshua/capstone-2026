@@ -8,7 +8,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT))
 
-# Add capstone_2026 to the path so we can import src
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "capstone_2026"))
 
 from src.config import RAW_DIR, INTERIM_DIR
