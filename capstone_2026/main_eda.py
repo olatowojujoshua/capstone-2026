@@ -6,7 +6,7 @@ from src.eda import (
     eda_05_fare_breakdown,
     eda_06_platform,
     eda_07_volatility,
-    eda_08_fairness,
+    eda_08_fairness
 )
 from src.eda.eda_utils import load_all_parquets
 
