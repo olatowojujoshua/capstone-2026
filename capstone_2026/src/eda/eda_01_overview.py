@@ -38,7 +38,7 @@ def run(df):
         and any(k in c.lower() for k in FARE_KEYWORDS)
     ]
     if not numeric_cols:
-        print("⚠️ No numeric fare-related columns detected")
+        print("No numeric fare-related columns detected")
         return
 
     # Step 3: aggregate on sampled numeric data
