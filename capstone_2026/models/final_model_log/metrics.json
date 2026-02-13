@@ -1,0 +1,49 @@
+{
+  "validation": {
+    "mae": 0.45745351168047566,
+    "rmse": 1.4128289002778738,
+    "r2": 0.9933120874418455,
+    "p90_abs_error": 0.8073487520593633,
+    "mean_y_true": 23.74186448,
+    "mean_y_pred": 23.693491230666535,
+    "n": 500000
+  },
+  "test": {
+    "mae": 0.37356406654849833,
+    "rmse": 1.0227451476319753,
+    "r2": 0.9958429567498291,
+    "p90_abs_error": 0.7294002221355056,
+    "mean_y_true": 22.33494136,
+    "mean_y_pred": 22.331917210356046,
+    "n": 500000
+  },
+  "features": [
+    "PULocationID",
+    "DOLocationID",
+    "trip_miles",
+    "trip_time",
+    "tips",
+    "driver_pay",
+    "fare_per_mile",
+    "pickup_delay_sec",
+    "shared_request_flag",
+    "wav_request_flag",
+    "wav_match_flag",
+    "trip_count",
+    "avg_pickup_delay_sec",
+    "med_fare_per_mile"
+  ],
+  "train_months": [
+    "2021-01",
+    "2021-02",
+    "2021-03",
+    "2021-04",
+    "2021-05",
+    "2021-06",
+    "2021-07",
+    "2021-08"
+  ],
+  "val_month": "2021-09",
+  "test_month": "2021-10",
+  "target_transform": "log1p"
+}
