@@ -44,6 +44,8 @@ data/
 # Models (optional - comment out to track trained models)
 models/*.joblib
 models/*.pkl
+models/**
+capstone_2026/models/**
 
 # Logs
 *.log
