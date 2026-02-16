@@ -45,6 +45,16 @@ def pick_feature_columns(df: pd.DataFrame):
         "month",
     }
 
+    # Prevent target leakage: exclude fare-derived / target-proxy features if present.
+    leakage = {
+        "fare_per_mile",
+        "med_fare_per_mile",
+        "total_fare",
+        "fare_amount",
+        "base_fare",
+    }
+    drop = drop.union(leakage)
+
     feats = []
     for c in df.columns:
         if c in drop:
