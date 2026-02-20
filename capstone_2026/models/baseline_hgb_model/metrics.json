@@ -1,37 +1,15 @@
 {
-  "validation": {
-    "mae": 0.445554302581015,
-    "rmse": 1.2847777436037715,
-    "r2": 0.9944346791940973,
-    "p90_abs_error": 0.8193261436621679,
-    "mean_y_true": 23.715889545000003,
-    "mean_y_pred": 23.705480763527977,
-    "n": 2000000
-  },
-  "test": {
-    "mae": 0.37728254579954457,
-    "rmse": 0.9768067916238858,
-    "r2": 0.9962277191618432,
-    "p90_abs_error": 0.7512011639078657,
-    "mean_y_true": 22.363947299999996,
-    "mean_y_pred": 22.393872423621968,
-    "n": 2000000
-  },
   "features": [
     "PULocationID",
     "DOLocationID",
     "trip_miles",
     "trip_time",
-    "tips",
-    "driver_pay",
-    "fare_per_mile",
     "pickup_delay_sec",
     "shared_request_flag",
     "wav_request_flag",
     "wav_match_flag",
     "trip_count",
-    "avg_pickup_delay_sec",
-    "med_fare_per_mile"
+    "avg_pickup_delay_sec"
   ],
   "train_months": [
     "2021-01",
@@ -44,5 +22,31 @@
     "2021-08"
   ],
   "val_month": "2021-09",
-  "test_month": "2021-10"
+  "test_month": "2021-10",
+  "target_transform": "none",
+  "segments": {
+    "all": {
+      "validation": {
+        "mae": 4.060591801351489,
+        "rmse": 7.073821853183206,
+        "r2": 0.8323437751639213,
+        "p90_abs_error": 9.348034912598346,
+        "mean_y_true": 23.74186448,
+        "mean_y_pred": 23.15228981510368,
+        "n": 500000
+      },
+      "test": {
+        "mae": 3.552482914571687,
+        "rmse": 6.235772766685289,
+        "r2": 0.845463792631209,
+        "p90_abs_error": 8.441085096662565,
+        "mean_y_true": 22.33494136,
+        "mean_y_pred": 21.747070997341986,
+        "n": 500000
+      },
+      "n_train": 4000000,
+      "n_val": 500000,
+      "n_test": 500000
+    }
+  }
 }

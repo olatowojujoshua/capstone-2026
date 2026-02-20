@@ -7,7 +7,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 
@@ -36,33 +37,30 @@ def load_split_tables(model_table_dir: Path, months: list[str], sample_per_month
 
 
 def pick_feature_columns(df: pd.DataFrame):
-    drop = {
-        TARGET_COL,
-        "pickup_datetime",
-        "request_datetime",
-        "dropoff_datetime",
-        "time_bucket",
-        "month",
-    }
+    requested = [
+        "PULocationID",
+        "DOLocationID",
+        "trip_miles",
+        "trip_time",
+        "pickup_delay_sec",
+        "shared_request_flag",
+        "wav_request_flag",
+        "wav_match_flag",
+        "trip_count",
+        "avg_pickup_delay_sec",
+    ]
 
-    # Prevent target leakage: exclude fare-derived / target-proxy features if present.
-    leakage = {
-        "fare_per_mile",
-        "med_fare_per_mile",
-        "total_fare",
-        "fare_amount",
-        "base_fare",
-    }
-    drop = drop.union(leakage)
+    return [c for c in requested if c in df.columns]
 
-    feats = []
-    for c in df.columns:
-        if c in drop:
-            continue
-        if pd.api.types.is_numeric_dtype(df[c]):
-            feats.append(c)
 
-    return feats
+def load_feature_list(feature_json: str | None, df: pd.DataFrame) -> list[str]:
+    if not feature_json:
+        return pick_feature_columns(df)
+
+    with open(feature_json, "r") as f:
+        feats = json.load(f)
+
+    return [c for c in feats if c in df.columns]
 
 
 def add_trip_length_bucket(df: pd.DataFrame) -> pd.DataFrame:
@@ -135,7 +133,7 @@ def train_pipeline(args):
     df_val = add_trip_length_bucket(df_val)
     df_test = add_trip_length_bucket(df_test)
 
-    feats = pick_feature_columns(df_train)
+    feats = load_feature_list(args.features_json, df_train)
 
     print(f"[INFO] Using {len(feats)} numeric features")
 
@@ -176,15 +174,50 @@ def train_pipeline(args):
         if args.log_target:
             y_train = np.log1p(y_train)
 
-        print(f"\n[TRAIN] HistGradientBoostingRegressor (segment={seg})...")
-        model = HistGradientBoostingRegressor(
-            max_depth=8,
-            learning_rate=0.08,
-            max_iter=300,
-            random_state=42,
-            loss=args.loss,
-            quantile=args.quantile if args.loss == "quantile" else None,
-        )
+        if args.model_type == "linear":
+            print(f"\n[TRAIN] LinearRegression (segment={seg})...")
+            model = LinearRegression()
+        elif args.model_type == "gbr":
+            print(f"\n[TRAIN] GradientBoostingRegressor (segment={seg})...")
+            model = GradientBoostingRegressor(
+                n_estimators=200,
+                learning_rate=0.05,
+                max_depth=4,
+                random_state=42,
+            )
+        elif args.model_type == "rf":
+            print(f"\n[TRAIN] RandomForestRegressor (segment={seg})...")
+            model = RandomForestRegressor(
+                n_estimators=200,
+                max_depth=10,
+                random_state=42,
+                n_jobs=-1,
+            )
+        elif args.model_type == "xgb":
+            print(f"\n[TRAIN] XGBoostRegressor (segment={seg})...")
+            try:
+                from xgboost import XGBRegressor
+            except ImportError as exc:
+                raise ImportError("xgboost is not installed. Please pip install xgboost") from exc
+            model = XGBRegressor(
+                n_estimators=200,
+                learning_rate=0.05,
+                max_depth=6,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                random_state=42,
+                n_jobs=-1,
+            )
+        else:
+            print(f"\n[TRAIN] HistGradientBoostingRegressor (segment={seg})...")
+            model = HistGradientBoostingRegressor(
+                max_depth=8,
+                learning_rate=0.08,
+                max_iter=300,
+                random_state=42,
+                loss=args.loss,
+                quantile=args.quantile if args.loss == "quantile" else None,
+            )
 
         model.fit(X_train, y_train)
 
@@ -225,7 +258,17 @@ def train_pipeline(args):
     for seg in segments:
         seg_dir = out_dir if seg == "all" else out_dir / f"segment={seg}"
         seg_dir.mkdir(parents=True, exist_ok=True)
-        model_fp = seg_dir / "baseline_hgb_model.joblib"
+        if args.model_type == "linear":
+            model_name = "linear_regression_model.joblib"
+        elif args.model_type == "gbr":
+            model_name = "gradient_boosting_model.joblib"
+        elif args.model_type == "rf":
+            model_name = "random_forest_model.joblib"
+        elif args.model_type == "xgb":
+            model_name = "xgboost_model.joblib"
+        else:
+            model_name = "baseline_hgb_model.joblib"
+        model_fp = seg_dir / model_name
         joblib.dump(trained_models[seg], model_fp)
 
     print("\n[SAVED]")
@@ -249,7 +292,15 @@ def parse_args():
 
     p.add_argument("--sample_per_month", type=int, default=500000)
 
+    p.add_argument(
+        "--features_json",
+        type=str,
+        default=None,
+        help="Path to features.json to use fixed feature list",
+    )
+
     p.add_argument("--output_dir", type=str, default="models/final_model")
+    p.add_argument("--model_type", type=str, default="hgb", choices=["hgb", "linear", "xgb", "rf", "gbr"], help="model type to train")
     p.add_argument("--log_target", action="store_true", help="train on log1p(target) and invert for metrics")
     p.add_argument("--segment_by_trip_length", action="store_true", help="train separate models for short/medium/long trips")
     p.add_argument("--loss", type=str, default="squared_error", choices=["squared_error", "absolute_error", "poisson", "quantile"], help="loss function for HistGradientBoostingRegressor")
