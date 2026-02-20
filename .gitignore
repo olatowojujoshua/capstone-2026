@@ -45,7 +45,6 @@ data/
 models/*.joblib
 models/*.pkl
 models/**
-capstone_2026/models/**
 
 # Logs
 *.log
