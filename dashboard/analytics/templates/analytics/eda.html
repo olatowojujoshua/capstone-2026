@@ -1,0 +1,105 @@
+{% extends "analytics/base.html" %}
+{% block title %}Exploratory Analysis{% endblock %}
+{% block page_title %}Exploratory Data Analysis{% endblock %}
+{% block page_subtitle %}Fare patterns across time, platforms, and trip characteristics{% endblock %}
+
+{% block content %}
+<div class="grid-2col">
+    <div class="card card-wide">
+        <div class="card-header">
+            <h2>Average Fare by Hour of Day</h2>
+            <span class="card-badge">24-Hour Pattern</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="hourlyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Average Fare by Weekday</h2>
+            <span class="card-badge">Mon–Sun</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="weekdayChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="grid-3col">
+    <div class="card">
+        <div class="card-header">
+            <h2>Monthly Fare Trend</h2>
+            <span class="card-badge">Jan–Aug 2021</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Fare by Platform</h2>
+            <span class="card-badge">Provider Comparison</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="platformChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Fare by Trip Length</h2>
+            <span class="card-badge">Mean ± Std</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="tripLenChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Hourly fare line chart
+    createLineChart('hourlyChart',
+        {{ hour_labels_json| safe }},
+        {{ hour_means_json| safe }},
+        'Avg Fare ($)',
+        'rgba(99, 102, 241, 1)',
+        'rgba(99, 102, 241, 0.1)'
+    );
+
+    // Weekday bar chart
+    createBarChart('weekdayChart',
+        {{ wd_labels_json| safe }},
+        {{ wd_values_json| safe }},
+        'Avg Fare ($)',
+        createGradientColors(7, 'indigo')
+    );
+
+    // Monthly trend
+    createBarChart('monthlyChart',
+        {{ month_labels_json| safe }},
+        {{ month_values_json| safe }},
+        'Avg Fare ($)',
+        createGradientColors(8, 'cyan')
+    );
+
+    // Platform comparison
+    createBarChart('platformChart',
+        {{ plat_labels_json| safe }},
+        {{ plat_values_json| safe }},
+        'Avg Fare ($)',
+        ['rgba(99, 102, 241, 0.8)', 'rgba(6, 182, 212, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(249, 115, 22, 0.8)']
+    );
+
+    // Trip length
+    createBarChart('tripLenChart',
+        {{ tl_labels_json| safe }},
+        {{ tl_means_json| safe }},
+        'Avg Fare ($)',
+        ['rgba(16, 185, 129, 0.8)', 'rgba(99, 102, 241, 0.8)', 'rgba(244, 63, 94, 0.8)']
+    );
+</script>
+{% endblock %}

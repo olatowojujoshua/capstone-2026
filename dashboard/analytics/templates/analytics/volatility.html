@@ -1,0 +1,116 @@
+{% extends "analytics/base.html" %}
+{% block title %}Volatility{% endblock %}
+{% block page_title %}Pricing Volatility Analysis{% endblock %}
+{% block page_subtitle %}Coefficient of Variation (CV) tracking across time and geographic zones{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon cyan">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ avg_cv }}</span>
+            <span class="kpi-label">Average CV</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ min_cv }}</span>
+            <span class="kpi-label">Min CV</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ max_cv }}</span>
+            <span class="kpi-label">Max CV</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ num_hours|floatformat:0 }}</span>
+            <span class="kpi-label">Hourly Observations</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Daily Average Coefficient of Variation</h2>
+        <span class="card-badge">Fare Price Stability Over Time</span>
+    </div>
+    <div class="chart-container chart-xl">
+        <canvas id="volTimeSeries"></canvas>
+    </div>
+</div>
+
+<div class="grid-2col">
+    <div class="card">
+        <div class="card-header">
+            <h2>Highest-Fare Zones (Top 20)</h2>
+            <span class="card-badge">By Avg Base Fare</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="topZonesChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Lowest-Fare Zones (Bottom 20)</h2>
+            <span class="card-badge">By Avg Base Fare</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="bottomZonesChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // CV time series
+    createLineChart('volTimeSeries',
+        {{ daily_labels_json| safe }},
+        {{ daily_values_json| safe }},
+        'Avg Daily CV',
+        'rgba(6, 182, 212, 1)',
+        'rgba(6, 182, 212, 0.08)',
+        false
+    );
+
+    // Top zones horizontal bar
+    createHorizontalBarChart('topZonesChart',
+        {{ top_labels_json| safe }},
+        {{ top_values_json| safe }},
+        'Avg Fare ($)',
+        'rgba(244, 63, 94, 0.8)'
+    );
+
+    // Bottom zones horizontal bar
+    createHorizontalBarChart('bottomZonesChart',
+        {{ bottom_labels_json| safe }},
+        {{ bottom_values_json| safe }},
+        'Avg Fare ($)',
+        'rgba(16, 185, 129, 0.8)'
+    );
+</script>
+{% endblock %}
