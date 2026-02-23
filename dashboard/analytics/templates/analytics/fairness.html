@@ -1,0 +1,176 @@
+{% extends "analytics/base.html" %}
+{% block title %}Fairness{% endblock %}
+{% block page_title %}Spatial Fairness Analysis{% endblock %}
+{% block page_subtitle %}Evaluating prediction equity across fare deciles and geographic zones{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3v18" />
+                <path d="M8 7l-4 4 4 4" />
+                <path d="M16 7l4 4-4 4" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">${{ fare_range }}</span>
+            <span class="kpi-label">Zone Fare Range</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">${{ fare_mean }}</span>
+            <span class="kpi-label">Mean Zone Fare</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon cyan">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M8 12h8" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ gini }}</span>
+            <span class="kpi-label">Gini Index (Fares)</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ num_zones }}</span>
+            <span class="kpi-label">Pickup Zones</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Residual Variance by Prediction Decile</h2>
+        <span class="card-badge">All Models · October 2021 Test Set</span>
+    </div>
+    <p class="card-description">
+        Higher residual variance in upper deciles indicates heteroscedasticity — models struggle more with expensive
+        trips.
+        A fair model should maintain consistent error across all fare ranges.
+    </p>
+    <div class="chart-container chart-xl">
+        <canvas id="heteroChart"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Detailed Heteroscedasticity per Model</h2>
+        <span class="card-badge">Residual Std by Decile</span>
+    </div>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    {% for label in models_hetero.0.decile_labels %}
+                    <th class="decile-th" title="{{ label }}">D{{ forloop.counter }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in models_hetero %}
+                <tr>
+                    <td class="feature-name">{{ m.name }}</td>
+                    {% for s in m.resid_stds %}
+                    <td>{{ s }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Zone Fare Disparity Metrics</h2>
+        <span class="card-badge">Spatial Fairness Indicators</span>
+    </div>
+    <div class="metrics-row">
+        <div class="metric-item">
+            <span class="metric-label">Min Zone Fare</span>
+            <span class="metric-value">${{ fare_min }}</span>
+        </div>
+        <div class="metric-item">
+            <span class="metric-label">Max Zone Fare</span>
+            <span class="metric-value">${{ fare_max }}</span>
+        </div>
+        <div class="metric-item">
+            <span class="metric-label">Mean Zone Fare</span>
+            <span class="metric-value">${{ fare_mean }}</span>
+        </div>
+        <div class="metric-item">
+            <span class="metric-label">Fare Range</span>
+            <span class="metric-value">${{ fare_range }}</span>
+        </div>
+        <div class="metric-item">
+            <span class="metric-label">Gini Coefficient</span>
+            <span class="metric-value">{{ gini }}</span>
+        </div>
+        <div class="metric-item">
+            <span class="metric-label">Total Zones</span>
+            <span class="metric-value">{{ num_zones }}</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Grouped bar chart for heteroscedasticity
+    const heteroCtx = document.getElementById('heteroChart').getContext('2d');
+    new Chart(heteroCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ decile_labels_json| safe }},
+        datasets: {{ chart_datasets_json| safe }},
+        },
+        options: {
+        ...chartDefaults(),
+        plugins: {
+            ...chartDefaults().plugins,
+            legend: { ...chartDefaults().plugins.legend, display: true },
+        },
+        scales: {
+            x: {
+                ...chartDefaults().scales.x,
+                ticks: {
+                    ...chartDefaults().scales.x.ticks,
+                    maxRotation: 45,
+                    minRotation: 25,
+                    font: { size: 9, family: 'Inter' }
+                }
+            },
+            y: {
+                ...chartDefaults().scales.y,
+                title: {
+                    display: true,
+                    text: 'Residual Variance',
+                    color: 'rgba(255,255,255,0.6)',
+                    font: { size: 12, family: 'Inter' }
+                }
+            }
+        }
+    }
+    });
+</script>
+{% endblock %}
