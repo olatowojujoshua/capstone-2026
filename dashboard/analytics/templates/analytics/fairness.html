@@ -62,12 +62,25 @@
         <span class="card-badge">All Models · October 2021 Test Set</span>
     </div>
     <p class="card-description">
-        Higher residual variance in upper deciles indicates heteroscedasticity — models struggle more with expensive
+        Higher residual variance in upper deciles indicates heteroscedasticity - models struggle more with expensive
         trips.
         A fair model should maintain consistent error across all fare ranges.
     </p>
     <div class="chart-container chart-xl">
         <canvas id="heteroChart"></canvas>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Selected Models - Residual Std by Decile</h2>
+        <span class="card-badge">HGB · Log-Transform HGB · Quantile HGB</span>
+    </div>
+    <p class="card-description">
+        Focused comparison of the three HGB-family models showing residual standard deviation across prediction deciles.
+    </p>
+    <div class="chart-container chart-xxl">
+        <canvas id="selectedHeteroChart"></canvas>
     </div>
 </div>
 
@@ -136,7 +149,7 @@
 
 {% block extra_js %}
 <script>
-    // Grouped bar chart for heteroscedasticity
+    // Grouped bar chart for heteroscedasticity (all models)
     const heteroCtx = document.getElementById('heteroChart').getContext('2d');
     new Chart(heteroCtx, {
         type: 'bar',
@@ -165,6 +178,69 @@
                 title: {
                     display: true,
                     text: 'Residual Variance',
+                    color: 'rgba(255,255,255,0.6)',
+                    font: { size: 12, family: 'Inter' }
+                }
+            }
+        }
+    }
+    });
+
+    // Selected 3 models line chart (HGB, Log-Transform HGB, Quantile HGB)
+    const selDatasets = {{ selected_datasets_json| safe }};
+    const selColors = ['rgba(99, 102, 241, 1)', 'rgba(6, 182, 212, 1)', 'rgba(249, 115, 22, 1)'];
+    const selLineDatasets = selDatasets.map(function (ds, i) {
+        return {
+            label: ds.label,
+            data: ds.data,
+            borderColor: selColors[i],
+            backgroundColor: selColors[i].replace('1)', '0.1)'),
+            fill: false,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: selColors[i],
+            pointBorderColor: '#fff',
+            pointBorderWidth: 1.5,
+            pointHoverRadius: 7,
+            borderWidth: 2.5,
+        };
+    });
+
+    const selCtx = document.getElementById('selectedHeteroChart').getContext('2d');
+    new Chart(selCtx, {
+        type: 'line',
+        data: {
+            labels: {{ decile_labels_json| safe }},
+        datasets: selLineDatasets,
+        },
+        options: {
+        ...chartDefaults(),
+        plugins: {
+            ...chartDefaults().plugins,
+            legend: { ...chartDefaults().plugins.legend, display: true },
+            datalabels: { display: false },
+        },
+        scales: {
+            x: {
+                ...chartDefaults().scales.x,
+                title: {
+                    display: true,
+                    text: 'Prediction Decile',
+                    color: 'rgba(255,255,255,0.6)',
+                    font: { size: 12, family: 'Inter' }
+                },
+                ticks: {
+                    ...chartDefaults().scales.x.ticks,
+                    maxRotation: 45,
+                    minRotation: 25,
+                    font: { size: 9, family: 'Inter' }
+                }
+            },
+            y: {
+                ...chartDefaults().scales.y,
+                title: {
+                    display: true,
+                    text: 'Residual Std Deviation',
                     color: 'rgba(255,255,255,0.6)',
                     font: { size: 12, family: 'Inter' }
                 }

@@ -1,21 +1,12 @@
-"""
-Views for the analytics dashboard.
-All data is loaded directly from CSV/JSON files in the capstone_2026 directory.
-"""
 import csv
 import json
-from pathlib import Path
-
 from django.conf import settings
 from django.shortcuts import render
-
 
 EDA_DIR = settings.REPORTS_DIR / 'eda'
 SLICES_DIR = settings.REPORTS_DIR / 'slices'
 
-
 def _read_csv(filepath):
-    """Read a CSV file and return list of dicts."""
     rows = []
     with open(filepath, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
@@ -23,9 +14,7 @@ def _read_csv(filepath):
             rows.append(row)
     return rows
 
-
 def _read_json(filepath):
-    """Read a JSON file and return parsed data."""
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -35,19 +24,15 @@ def _read_json(filepath):
 # ─────────────────────────────────────────────────
 
 def overview(request):
-    # Dataset overview
     ds = _read_csv(EDA_DIR / 'dataset_overview.csv')
     ds_info = ds[0] if ds else {}
-
     # Fare components
     fare_comp = _read_csv(EDA_DIR / 'fare_components.csv')
     comp_labels = [r['component'].replace('_', ' ').title() for r in fare_comp]
     comp_values = [round(float(r['average_amount']), 2) for r in fare_comp]
-
     # Numeric summary
     num_summary = _read_csv(EDA_DIR / 'numeric_summary_sampled.csv')
-
-    # Platform fares
+    # Platform fares - sorted by trip count ascending (low → high)
     platform = _read_csv(EDA_DIR / 'platform_fares.csv')
     platform_map = {
         'HV0002': 'Juno',
@@ -59,13 +44,12 @@ def overview(request):
         p['platform_name'] = platform_map.get(p.get('hvfhs_license_num', ''), p.get('hvfhs_license_num', ''))
         p['mean'] = round(float(p.get('mean', 0)), 2)
         p['count'] = int(float(p.get('count', 0)))
-
+    platform.sort(key=lambda x: x['count'])
     # Trip length
     trip_len = _read_csv(EDA_DIR / 'fare_by_trip_length.csv')
     for t in trip_len:
         t['mean'] = round(float(t.get('mean', 0)), 2)
         t['count'] = int(float(t.get('count', 0)))
-
     context = {
         'ds_info': ds_info,
         'comp_labels_json': json.dumps(comp_labels),
@@ -76,67 +60,88 @@ def overview(request):
     }
     return render(request, 'analytics/overview.html', context)
 
-
 # ─────────────────────────────────────────────────
 # 2. EDA
 # ─────────────────────────────────────────────────
-
 def eda(request):
     # Fare by hour
     hourly = _read_csv(EDA_DIR / 'fare_by_hour.csv')
     hour_labels = [r['hour'] for r in hourly]
     hour_means = [round(float(r['mean']), 2) for r in hourly]
     hour_stds = [round(float(r['std']), 2) for r in hourly]
-
+    hour_counts = [int(float(r['count'])) for r in hourly]
     # Fare by weekday
     weekday = _read_csv(EDA_DIR / 'fare_by_weekday_sampled.csv')
     day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     wd_map = {r['weekday']: round(float(r['base_passenger_fare']), 2) for r in weekday}
     wd_labels = day_order
     wd_values = [wd_map.get(d, 0) for d in day_order]
-
     # Fare by month
     monthly = _read_csv(EDA_DIR / 'fare_by_month.csv')
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']
-    month_values = [round(float(r['base_passenger_fare']), 2) for r in monthly]
-
-    # Platform fares
+    month_values = [int(round(float(r['base_passenger_fare']))) for r in monthly]
+    # Platform fares - sorted by avg fare ascending (low → high)
     platform = _read_csv(EDA_DIR / 'platform_fares.csv')
     platform_map = {'HV0002': 'Juno', 'HV0003': 'Uber', 'HV0004': 'Via', 'HV0005': 'Lyft'}
-    plat_labels = [platform_map.get(r['hvfhs_license_num'], r['hvfhs_license_num']) for r in platform]
-    plat_values = [round(float(r['mean']), 2) for r in platform]
-
+    plat_data = []
+    for r in platform:
+        plat_data.append({
+            'label': platform_map.get(r['hvfhs_license_num'], r['hvfhs_license_num']),
+            'mean': round(float(r['mean']), 2),
+            'count': int(float(r['count'])),
+        })
+    plat_data.sort(key=lambda x: x['mean'])
+    plat_labels = [p['label'] for p in plat_data]
+    plat_values = [p['mean'] for p in plat_data]
+    plat_counts = [p['count'] for p in plat_data]
     # Trip length
     trip_len = _read_csv(EDA_DIR / 'fare_by_trip_length.csv')
     tl_labels = [r['trip_length_bucket'].title() for r in trip_len]
     tl_means = [round(float(r['mean']), 2) for r in trip_len]
     tl_stds = [round(float(r['std']), 2) for r in trip_len]
-
+    # Dropoff zone top/bottom 10
+    dropoff = _read_csv(EDA_DIR / 'dropoff_zone_fares.csv')
+    dropoff_parsed = []
+    for r in dropoff:
+        dropoff_parsed.append({
+            'zone': int(r['DOLocationID']),
+            'fare': round(float(r['mean_fare']), 2),
+        })
+    dropoff_parsed.sort(key=lambda x: x['fare'], reverse=True)
+    do_top10 = dropoff_parsed[:10]
+    do_bottom10 = dropoff_parsed[-10:]
+    do_top_labels = [f"Zone {z['zone']}" for z in do_top10]
+    do_top_values = [z['fare'] for z in do_top10]
+    do_bottom_labels = [f"Zone {z['zone']}" for z in do_bottom10]
+    do_bottom_values = [z['fare'] for z in do_bottom10]
     context = {
         'hour_labels_json': json.dumps(hour_labels),
         'hour_means_json': json.dumps(hour_means),
         'hour_stds_json': json.dumps(hour_stds),
+        'hour_counts_json': json.dumps(hour_counts),
         'wd_labels_json': json.dumps(wd_labels),
         'wd_values_json': json.dumps(wd_values),
         'month_labels_json': json.dumps(month_names),
         'month_values_json': json.dumps(month_values),
         'plat_labels_json': json.dumps(plat_labels),
         'plat_values_json': json.dumps(plat_values),
+        'plat_counts_json': json.dumps(plat_counts),
         'tl_labels_json': json.dumps(tl_labels),
         'tl_means_json': json.dumps(tl_means),
         'tl_stds_json': json.dumps(tl_stds),
+        'do_top_labels_json': json.dumps(do_top_labels),
+        'do_top_values_json': json.dumps(do_top_values),
+        'do_bottom_labels_json': json.dumps(do_bottom_labels),
+        'do_bottom_values_json': json.dumps(do_bottom_values),
     }
     return render(request, 'analytics/eda.html', context)
-
 
 # ─────────────────────────────────────────────────
 # 3. Model Comparison
 # ─────────────────────────────────────────────────
-
 def model_comparison(request):
     metrics_file = SLICES_DIR / 'overall_metrics_2021-10.csv'
     rows = _read_csv(metrics_file)
-
     model_names_map = {
         'baseline_hgb': 'HistGradientBoosting',
         'model_xgb': 'XGBoost',
@@ -146,7 +151,6 @@ def model_comparison(request):
         'model_rf': 'RandomForest',
         'linear_regression': 'Linear Regression',
     }
-
     models_data = []
     for r in rows:
         if not r.get('model_name'):
@@ -160,19 +164,15 @@ def model_comparison(request):
             'p90': round(float(r['p90_abs_error']), 3),
             'n': int(float(r['n'])),
         })
-
     # Sort by RMSE ascending (best first)
     models_data.sort(key=lambda x: x['rmse'])
-
     chart_labels = [m['name'] for m in models_data]
     chart_mae = [m['mae'] for m in models_data]
     chart_rmse = [m['rmse'] for m in models_data]
     chart_r2 = [m['r2'] for m in models_data]
-
     # Best model summary
     summary_file = SLICES_DIR / 'overall_summary_2021-10.json'
     summary = _read_json(summary_file)
-
     context = {
         'models_data': models_data,
         'chart_labels_json': json.dumps(chart_labels),
@@ -194,15 +194,12 @@ def model_comparison(request):
     }
     return render(request, 'analytics/models.html', context)
 
-
 # ─────────────────────────────────────────────────
 # 4. Volatility
 # ─────────────────────────────────────────────────
-
 def volatility(request):
-    # Hourly fare volatility (CV time series) — sample every 24 hours for readability
+    # Hourly fare volatility (CV time series) - sample every 24 hours for readability
     vol_data = _read_csv(EDA_DIR / 'hourly_fare_volatility.csv')
-
     # Group by date, compute daily average CV
     daily_cv = {}
     for r in vol_data:
@@ -211,30 +208,24 @@ def volatility(request):
         if date_str not in daily_cv:
             daily_cv[date_str] = []
         daily_cv[date_str].append(cv)
-
     sorted_dates = sorted(daily_cv.keys())
     daily_labels = sorted_dates
     daily_values = [round(sum(daily_cv[d]) / len(daily_cv[d]), 4) for d in sorted_dates]
-
-    # Zone average fares — top 20 and bottom 20
+    # Zone average fares - top 20 and bottom 20
     zone_data = _read_csv(EDA_DIR / 'zone_average_fares.csv')
     zone_parsed = [(int(r['PULocationID']), round(float(r['base_passenger_fare']), 2)) for r in zone_data]
     zone_parsed.sort(key=lambda x: x[1], reverse=True)
-
     top20 = zone_parsed[:20]
     bottom20 = zone_parsed[-20:]
-
     top_labels = [f'Zone {z[0]}' for z in top20]
     top_values = [z[1] for z in top20]
     bottom_labels = [f'Zone {z[0]}' for z in bottom20]
     bottom_values = [z[1] for z in bottom20]
-
     # Compute overall volatility stats
     all_cvs = [float(r['cv']) for r in vol_data]
     avg_cv = round(sum(all_cvs) / len(all_cvs), 4) if all_cvs else 0
     max_cv = round(max(all_cvs), 4) if all_cvs else 0
     min_cv = round(min(all_cvs), 4) if all_cvs else 0
-
     context = {
         'daily_labels_json': json.dumps(daily_labels),
         'daily_values_json': json.dumps(daily_values),
@@ -249,11 +240,9 @@ def volatility(request):
     }
     return render(request, 'analytics/volatility.html', context)
 
-
 # ─────────────────────────────────────────────────
 # 5. Fairness
 # ─────────────────────────────────────────────────
-
 def fairness(request):
     model_names_map = {
         'baseline_hgb': 'HistGradientBoosting',
@@ -264,23 +253,19 @@ def fairness(request):
         'model_rf': 'RandomForest',
         'linear_regression': 'Linear Regression',
     }
-
     # Collect heteroscedasticity data for all models
     hetero_files = sorted(SLICES_DIR.glob('hetero_resid_by_decile_*_2021-10.csv'))
     models_hetero = []
-
     for fp in hetero_files:
         fname = fp.stem  # e.g. hetero_resid_by_decile_model_xgb_2021-10
         # Extract model key
         prefix = 'hetero_resid_by_decile_'
         suffix = '_2021-10'
         model_key = fname[len(prefix):-len(suffix)] if fname.startswith(prefix) and fname.endswith(suffix) else fname
-
         rows = _read_csv(fp)
         decile_labels = [r['pred_decile'] for r in rows]
         resid_vars = [round(float(r['resid_var']), 2) for r in rows]
         resid_stds = [round(float(r['resid_std']), 2) for r in rows]
-
         models_hetero.append({
             'name': model_names_map.get(model_key, model_key),
             'key': model_key,
@@ -288,10 +273,8 @@ def fairness(request):
             'resid_vars': resid_vars,
             'resid_stds': resid_stds,
         })
-
     # Decile labels (same for all models)
     decile_labels = models_hetero[0]['decile_labels'] if models_hetero else []
-
     # Zone fare disparity
     zone_data = _read_csv(EDA_DIR / 'zone_average_fares.csv')
     fares = [float(r['base_passenger_fare']) for r in zone_data]
@@ -299,7 +282,6 @@ def fairness(request):
     fare_max = round(max(fares), 2) if fares else 0
     fare_mean = round(sum(fares) / len(fares), 2) if fares else 0
     fare_range = round(fare_max - fare_min, 2)
-
     # Gini-like disparity metric
     sorted_fares = sorted(fares)
     n = len(sorted_fares)
@@ -308,7 +290,6 @@ def fairness(request):
         gini = round(gini, 4)
     else:
         gini = 0
-
     # Build chart data for all models stacked
     chart_datasets = []
     colors = [
@@ -320,7 +301,6 @@ def fairness(request):
         'rgba(168, 85, 247, 0.8)',
         'rgba(234, 179, 8, 0.8)',
     ]
-
     for i, m in enumerate(models_hetero):
         chart_datasets.append({
             'label': m['name'],
@@ -329,10 +309,30 @@ def fairness(request):
             'borderColor': colors[i % len(colors)].replace('0.8', '1'),
             'borderWidth': 1,
         })
-
+    # Build chart data for selected 3 models
+    selected_model_names = {'HistGradientBoosting', 'Log-Transform HGB', 'Quantile HGB'}
+    selected_colors = [
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(6, 182, 212, 0.8)',
+        'rgba(249, 115, 22, 0.8)',
+    ]
+    selected_datasets = []
+    color_idx = 0
+    for m in models_hetero:
+        if m['name'] in selected_model_names:
+            selected_datasets.append({
+                'label': m['name'],
+                'data': m['resid_stds'],
+                'backgroundColor': selected_colors[color_idx % len(selected_colors)],
+                'borderColor': selected_colors[color_idx % len(selected_colors)].replace('0.8', '1'),
+                'borderWidth': 1,
+                'borderRadius': 4,
+            })
+            color_idx += 1
     context = {
         'decile_labels_json': json.dumps(decile_labels),
         'chart_datasets_json': json.dumps(chart_datasets),
+        'selected_datasets_json': json.dumps(selected_datasets),
         'models_hetero': models_hetero,
         'fare_min': fare_min,
         'fare_max': fare_max,

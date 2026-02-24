@@ -40,7 +40,7 @@
     <div class="card">
         <div class="card-header">
             <h2>Fare by Platform</h2>
-            <span class="card-badge">Provider Comparison</span>
+            <span class="card-badge">Sorted by Avg Fare</span>
         </div>
         <div class="chart-container">
             <canvas id="platformChart"></canvas>
@@ -57,6 +57,50 @@
         </div>
     </div>
 </div>
+
+<div class="grid-2col">
+    <div class="card">
+        <div class="card-header">
+            <h2>Hourly Fare Std Deviation</h2>
+            <span class="card-badge">Volatility by Hour</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="hourlyStdChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Trip Count by Platform</h2>
+            <span class="card-badge">Volume Comparison</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="platCountChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2col">
+    <div class="card">
+        <div class="card-header">
+            <h2>Top 10 Highest-Fare Dropoff Zones</h2>
+            <span class="card-badge">By Avg Fare</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="doTopChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Top 10 Lowest-Fare Dropoff Zones</h2>
+            <span class="card-badge">By Avg Fare</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="doBottomChart"></canvas>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -67,7 +111,10 @@
         {{ hour_means_json| safe }},
         'Avg Fare ($)',
         'rgba(99, 102, 241, 1)',
-        'rgba(99, 102, 241, 0.1)'
+        'rgba(99, 102, 241, 0.1)',
+        true,
+        'Hour of Day',
+        'Avg Fare ($)'
     );
 
     // Weekday bar chart
@@ -75,7 +122,10 @@
         {{ wd_labels_json| safe }},
         {{ wd_values_json| safe }},
         'Avg Fare ($)',
-        createGradientColors(7, 'indigo')
+        createGradientColors(7, 'indigo'),
+        'Day of Week',
+        'Avg Fare ($)',
+        true
     );
 
     // Monthly trend
@@ -83,15 +133,21 @@
         {{ month_labels_json| safe }},
         {{ month_values_json| safe }},
         'Avg Fare ($)',
-        createGradientColors(8, 'cyan')
+        createGradientColors(8, 'cyan'),
+        'Month',
+        'Avg Fare ($)',
+        true
     );
 
-    // Platform comparison
+    // Platform comparison (sorted by avg fare low → high)
     createBarChart('platformChart',
         {{ plat_labels_json| safe }},
         {{ plat_values_json| safe }},
         'Avg Fare ($)',
-        ['rgba(99, 102, 241, 0.8)', 'rgba(6, 182, 212, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(249, 115, 22, 0.8)']
+        ['rgba(16, 185, 129, 0.8)', 'rgba(99, 102, 241, 0.8)', 'rgba(6, 182, 212, 0.8)', 'rgba(249, 115, 22, 0.8)'],
+        'Platform',
+        'Avg Fare ($)',
+        true
     );
 
     // Trip length
@@ -99,7 +155,107 @@
         {{ tl_labels_json| safe }},
         {{ tl_means_json| safe }},
         'Avg Fare ($)',
-        ['rgba(16, 185, 129, 0.8)', 'rgba(99, 102, 241, 0.8)', 'rgba(244, 63, 94, 0.8)']
+        ['rgba(16, 185, 129, 0.8)', 'rgba(99, 102, 241, 0.8)', 'rgba(244, 63, 94, 0.8)'],
+        'Trip Length',
+        'Avg Fare ($)',
+        true
+    );
+
+    // --- Additional EDA Visualizations ---
+
+    // Hourly Fare Std Dev (line)
+    createLineChart('hourlyStdChart',
+        {{ hour_labels_json| safe }},
+        {{ hour_stds_json| safe }},
+        'Fare Std Dev ($)',
+        'rgba(244, 63, 94, 1)',
+        'rgba(244, 63, 94, 0.1)',
+        true,
+        'Hour of Day',
+        'Std Deviation ($)'
+    );
+
+    // Trip count by platform - sorted low → high by count
+    const platCountLabelsRaw = {{ plat_labels_json| safe }};
+    const platCountDataRaw = {{ plat_counts_json| safe }};
+    const platCountColors = ['rgba(16, 185, 129, 0.8)', 'rgba(99, 102, 241, 0.8)', 'rgba(6, 182, 212, 0.8)', 'rgba(249, 115, 22, 0.8)'];
+    // Zip, sort by count ascending, unzip
+    const platCountZipped = platCountLabelsRaw.map((l, i) => ({ label: l, count: platCountDataRaw[i], color: platCountColors[i % platCountColors.length] }));
+    platCountZipped.sort((a, b) => a.count - b.count);
+    const platCountLabels = platCountZipped.map(x => x.label);
+    const platCountData = platCountZipped.map(x => x.count);
+    const platCountSortedColors = platCountZipped.map(x => x.color);
+    const platCountCtx = document.getElementById('platCountChart').getContext('2d');
+    new Chart(platCountCtx, {
+        type: 'bar',
+        data: {
+            labels: platCountLabels,
+            datasets: [{
+                label: 'Trip Count',
+                data: platCountData,
+                backgroundColor: platCountSortedColors,
+                borderColor: 'transparent',
+                borderWidth: 0,
+                borderRadius: 6,
+                borderSkipped: false,
+                maxBarThickness: 48,
+            }]
+        },
+        plugins: [ChartDataLabels],
+        options: {
+            ...chartDefaults(),
+            scales: {
+                x: {
+                    ...chartDefaults().scales.x,
+                    title: { display: true, text: 'Platform', color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } }
+                },
+                y: {
+                    ...chartDefaults().scales.y,
+                    title: { display: true, text: 'Trip Count (Millions)', color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } },
+                    ticks: {
+                        ...chartDefaults().scales.y.ticks,
+                        callback: function (value) { return (value / 1000000).toFixed(0) + 'M'; }
+                    }
+                }
+            },
+            plugins: {
+                ...chartDefaults().plugins,
+                datalabels: {
+                    display: true,
+                    color: 'rgba(255,255,255,0.9)',
+                    font: { family: 'Inter', size: 11, weight: '600' },
+                    anchor: function (context) {
+                        const val = context.dataset.data[context.dataIndex];
+                        return val < 5000000 ? 'end' : 'center';
+                    },
+                    align: function (context) {
+                        const val = context.dataset.data[context.dataIndex];
+                        return val < 5000000 ? 'top' : 'center';
+                    },
+                    formatter: function (value) {
+                        return (value / 1000000).toFixed(1) + 'M';
+                    }
+                }
+            }
+        }
+    });
+
+    // Dropoff zone top 10
+    createHorizontalBarChart('doTopChart',
+        {{ do_top_labels_json| safe }},
+        {{ do_top_values_json| safe }},
+        'Avg Fare ($)',
+        'rgba(244, 63, 94, 0.8)',
+        true
+    );
+
+    // Dropoff zone bottom 10
+    createHorizontalBarChart('doBottomChart',
+        {{ do_bottom_labels_json| safe }},
+        {{ do_bottom_values_json| safe }},
+        'Avg Fare ($)',
+        'rgba(16, 185, 129, 0.8)',
+        true
     );
 </script>
 {% endblock %}

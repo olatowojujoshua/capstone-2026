@@ -67,7 +67,7 @@ def clean_month_df(df: pd.DataFrame) -> pd.DataFrame:
     # fare per mile (useful for outlier control + vehicle tier proxy)
     df["fare_per_mile"] = df["base_passenger_fare"] / df["trip_miles"]
 
-    # cap extreme outliers (winsorize) — conservative caps
+    # cap extreme outliers (winsorize) - conservative caps
     for c in ["trip_miles", "trip_time", "base_passenger_fare", "fare_per_mile"]:
         if c in df.columns:
             lo = df[c].quantile(0.005)

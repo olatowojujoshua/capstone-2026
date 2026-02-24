@@ -1,24 +1,18 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 from src.eda_plots.plot_utils import (
     save_fig, apply_dark_style, ACCENT_COLORS, TEXT_COLOR,
-    SUBTEXT_COLOR, FONT_FAMILY, GRID_COLOR,
+    FONT_FAMILY
 )
-
 
 def run():
     df = pd.read_csv("reports/eda/fare_components.csv")
-
-    # Clean up labels
     df["label"] = (
         df["component"]
         .str.replace("_", " ", regex=False)
         .str.title()
     )
-
     fig, ax = plt.subplots(figsize=(10, 6))
-
     bars = ax.bar(
         df["label"],
         df["average_amount"],
@@ -60,10 +54,8 @@ def run():
     )
     ax.set_ylim(0, max(df["average_amount"]) * 1.15)
     ax.set_xticklabels(df["label"], rotation=25, ha="right", fontsize=10)
-
     save_fig("fare_components")
-    print("✓ Fare breakdown plot saved")
-
+    print("Fare breakdown plot saved")
 
 if __name__ == "__main__":
     run()

@@ -1,6 +1,3 @@
-"""
-Django settings for dashboard_project.
-"""
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -52,7 +49,6 @@ STATICFILES_DIRS = []
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Path to capstone data
 CAPSTONE_ROOT = BASE_DIR.parent / 'capstone_2026'
 REPORTS_DIR = CAPSTONE_ROOT / 'reports'
 MODELS_DIR = CAPSTONE_ROOT / 'models'

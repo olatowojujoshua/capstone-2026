@@ -78,32 +78,29 @@
     </div>
 </div>
 
-<div class="grid-2col">
-    <div class="card">
-        <div class="card-header">
-            <h2>Error Metrics Comparison</h2>
-            <span class="card-badge">MAE & RMSE</span>
-        </div>
-        <div class="chart-container chart-lg">
-            <canvas id="errorChart"></canvas>
-        </div>
+<div class="card">
+    <div class="card-header">
+        <h2>Error Metrics Comparison</h2>
+        <span class="card-badge">MAE &amp; RMSE</span>
     </div>
+    <div class="chart-container chart-xl">
+        <canvas id="errorChart"></canvas>
+    </div>
+</div>
 
-    <div class="card">
-        <div class="card-header">
-            <h2>R² Score by Model</h2>
-            <span class="card-badge">Higher is Better</span>
-        </div>
-        <div class="chart-container chart-lg">
-            <canvas id="r2Chart"></canvas>
-        </div>
+<div class="card">
+    <div class="card-header">
+        <h2>R² Score by Model</h2>
+        <span class="card-badge">Higher is Better</span>
+    </div>
+    <div class="chart-container chart-lg">
+        <canvas id="r2Chart"></canvas>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Grouped bar chart for MAE and RMSE
     const errorCtx = document.getElementById('errorChart').getContext('2d');
     new Chart(errorCtx, {
         type: 'bar',
@@ -128,21 +125,32 @@
                 }
     ]
         },
+        plugins: [ChartDataLabels],
         options: {
         ...chartDefaults(),
         plugins: {
             ...chartDefaults().plugins,
             legend: { ...chartDefaults().plugins.legend, display: true },
+            datalabels: {
+                display: true,
+                color: 'rgba(255,255,255,0.85)',
+                anchor: 'center',
+                align: 'center',
+                font: { family: 'Inter', size: 10, weight: '600' },
+            },
         },
     }
     });
 
-    // R² bar chart
+    // R² bar chart with datalabels
     createBarChart('r2Chart',
         {{ chart_labels_json| safe }},
         {{ chart_r2_json| safe }},
         'R² Score',
-        createGradientColors(7, 'green')
+        createGradientColors(7, 'green'),
+        'Model',
+        'R² Score',
+        true
     );
 </script>
 {% endblock %}

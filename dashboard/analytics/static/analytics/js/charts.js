@@ -1,10 +1,5 @@
-/* ═══════════════════════════════════════════════
-   Chart.js Helper Functions — Dark Theme
-   ═══════════════════════════════════════════════ */
+Chart.defaults.plugins.datalabels = { display: false };
 
-/**
- * Returns shared defaults for Chart.js charts.
- */
 function chartDefaults() {
     return {
         responsive: true,
@@ -36,7 +31,8 @@ function chartDefaults() {
                 bodyFont: { family: 'Inter', size: 12 },
                 displayColors: true,
                 boxPadding: 4,
-            }
+            },
+            datalabels: { display: false }
         },
         scales: {
             x: {
@@ -67,6 +63,22 @@ function chartDefaults() {
 }
 
 /**
+ * Default datalabels config for bar charts.
+ */
+function barDatalabelsConfig() {
+    return {
+        display: true,
+        color: 'rgba(255,255,255,0.85)',
+        anchor: 'center',
+        align: 'center',
+        font: { family: 'Inter', size: 10, weight: '600' },
+        formatter: function (value) {
+            return value;
+        }
+    };
+}
+
+/**
  * Generate gradient colors for bar charts.
  */
 function createGradientColors(count, palette) {
@@ -87,13 +99,21 @@ function createGradientColors(count, palette) {
 }
 
 /**
- * Create a line chart.
+ * Create a line chart with optional axis labels.
  */
-function createLineChart(canvasId, labels, data, label, borderColor, bgColor, showPoints) {
+function createLineChart(canvasId, labels, data, label, borderColor, bgColor, showPoints, xLabel, yLabel) {
     const ctx = document.getElementById(canvasId).getContext('2d');
     const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight);
     gradient.addColorStop(0, bgColor || 'rgba(99, 102, 241, 0.15)');
     gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+    const opts = chartDefaults();
+    if (xLabel) {
+        opts.scales.x.title = { display: true, text: xLabel, color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+    }
+    if (yLabel) {
+        opts.scales.y.title = { display: true, text: yLabel, color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+    }
 
     new Chart(ctx, {
         type: 'line',
@@ -116,15 +136,26 @@ function createLineChart(canvasId, labels, data, label, borderColor, bgColor, sh
                 borderWidth: 2.5,
             }]
         },
-        options: chartDefaults()
+        options: opts
     });
 }
 
 /**
- * Create a vertical bar chart.
+ * Create a vertical bar chart with optional axis labels and datalabels.
  */
-function createBarChart(canvasId, labels, data, label, colors) {
+function createBarChart(canvasId, labels, data, label, colors, xLabel, yLabel, showDataLabels) {
     const ctx = document.getElementById(canvasId).getContext('2d');
+    const opts = chartDefaults();
+    if (xLabel) {
+        opts.scales.x.title = { display: true, text: xLabel, color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+    }
+    if (yLabel) {
+        opts.scales.y.title = { display: true, text: yLabel, color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+    }
+    if (showDataLabels) {
+        opts.plugins.datalabels = barDatalabelsConfig();
+    }
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -140,15 +171,38 @@ function createBarChart(canvasId, labels, data, label, colors) {
                 maxBarThickness: 48,
             }]
         },
-        options: chartDefaults()
+        plugins: showDataLabels ? [ChartDataLabels] : [],
+        options: opts
     });
 }
 
 /**
- * Create a horizontal bar chart.
+ * Create a horizontal bar chart with optional datalabels.
  */
-function createHorizontalBarChart(canvasId, labels, data, label, color) {
+function createHorizontalBarChart(canvasId, labels, data, label, color, showDataLabels) {
     const ctx = document.getElementById(canvasId).getContext('2d');
+    const opts = {
+        ...chartDefaults(),
+        indexAxis: 'y',
+        scales: {
+            x: {
+                ...chartDefaults().scales.x,
+            },
+            y: {
+                ...chartDefaults().scales.y,
+                ticks: {
+                    ...chartDefaults().scales.y.ticks,
+                    font: { family: 'Inter', size: 10 },
+                }
+            }
+        }
+    };
+    if (showDataLabels) {
+        opts.plugins.datalabels = barDatalabelsConfig();
+        opts.plugins.datalabels.anchor = 'end';
+        opts.plugins.datalabels.align = 'start';
+    }
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -163,22 +217,8 @@ function createHorizontalBarChart(canvasId, labels, data, label, color) {
                 borderSkipped: false,
             }]
         },
-        options: {
-            ...chartDefaults(),
-            indexAxis: 'y',
-            scales: {
-                x: {
-                    ...chartDefaults().scales.x,
-                },
-                y: {
-                    ...chartDefaults().scales.y,
-                    ticks: {
-                        ...chartDefaults().scales.y.ticks,
-                        font: { family: 'Inter', size: 10 },
-                    }
-                }
-            }
-        }
+        plugins: showDataLabels ? [ChartDataLabels] : [],
+        options: opts
     });
 }
 
@@ -215,6 +255,7 @@ function createDoughnutChart(canvasId, labels, data) {
             cutout: '62%',
             animation: { animateRotate: true, duration: 1000 },
             plugins: {
+                datalabels: { display: false },
                 legend: {
                     position: 'right',
                     labels: {
@@ -234,7 +275,7 @@ function createDoughnutChart(canvasId, labels, data) {
                     cornerRadius: 10,
                     padding: 12,
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             return ` ${context.label}: $${context.parsed.toFixed(2)}`;
                         }
                     }
