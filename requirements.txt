@@ -1,0 +1,9 @@
+pyarrow==21.0.0
+numpy==2.0.2
+scikit-learn==1.6.1
+joblib==1.5.3
+tqdm==4.67.3
+matplotlib==3.9.4
+django==4.2.28
+pandas==2.3.3
+xgboost==2.1.4

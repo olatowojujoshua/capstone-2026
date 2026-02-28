@@ -32,9 +32,9 @@ We computed residual variability by prediction decile and plotted residual stand
 **Change:** Train separate models for `short`, `medium`, and `long` trips.
 
 **Results:**
-- **Short:** residual std dev ~0.21 → ~2.28
-- **Medium:** residual std dev ~0.17–0.26 → ~2.36
-- **Long:** residual std dev ~0.78–1.2 → ~3.79
+- **Short:** residual std dev ~0.21 -> ~2.28
+- **Medium:** residual std dev ~0.17–0.26 -> ~2.36
+- **Long:** residual std dev ~0.78–1.2 -> ~3.79
 
 **Conclusion:** Segmentation helps slightly in low/mid deciles but does not fix top-decile variance, especially for long trips.
 

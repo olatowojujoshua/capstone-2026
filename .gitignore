@@ -38,9 +38,6 @@ ENV/
 .ipynb_checkpoints/
 *.ipynb
 
-# Data files (optional - comment out if you want to track data)
-data/
-
 # Models (optional - comment out to track trained models)
 models/*.joblib
 models/*.pkl

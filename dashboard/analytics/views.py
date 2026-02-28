@@ -32,7 +32,7 @@ def overview(request):
     comp_values = [round(float(r['average_amount']), 2) for r in fare_comp]
     # Numeric summary
     num_summary = _read_csv(EDA_DIR / 'numeric_summary_sampled.csv')
-    # Platform fares - sorted by trip count ascending (low → high)
+    # Platform fares - sorted by trip count ascending (low -> high)
     platform = _read_csv(EDA_DIR / 'platform_fares.csv')
     platform_map = {
         'HV0002': 'Juno',
@@ -78,9 +78,9 @@ def eda(request):
     wd_values = [wd_map.get(d, 0) for d in day_order]
     # Fare by month
     monthly = _read_csv(EDA_DIR / 'fare_by_month.csv')
-    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     month_values = [int(round(float(r['base_passenger_fare']))) for r in monthly]
-    # Platform fares - sorted by avg fare ascending (low → high)
+    # Platform fares - sorted by avg fare ascending (low -> high)
     platform = _read_csv(EDA_DIR / 'platform_fares.csv')
     platform_map = {'HV0002': 'Juno', 'HV0003': 'Uber', 'HV0004': 'Via', 'HV0005': 'Lyft'}
     plat_data = []

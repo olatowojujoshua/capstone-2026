@@ -10,7 +10,7 @@ The study investigates pricing behavior, temporal volatility, and fairness acros
 
 The project implements a structured data science pipeline:
 
-**Exploratory Data Analysis → Feature Engineering → Modeling → Evaluation → Fairness Assessment**
+**Exploratory Data Analysis -> Feature Engineering -> Modeling -> Evaluation -> Fairness Assessment**
 
 The objective is to build reproducible machine learning models while examining pricing stability and equity.
 

@@ -9,7 +9,7 @@ from src.eda_plots.plot_utils import (
 
 def run():
     df = pd.read_csv("reports/eda/fare_by_month.csv")
-    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
+    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     x = df["month"].values
     y = df["base_passenger_fare"].values
     x_smooth = np.linspace(x.min(), x.max(), 300)
@@ -47,7 +47,7 @@ def run():
     pct_change = (y[-1] - y[0]) / y[0] * 100
     ax.text(
         0.98, 0.05,
-        f"Jan→Aug: +{pct_change:.1f}%",
+        f"Jan->Dec: +{pct_change:.1f}%",
         transform=ax.transAxes,
         fontsize=11, fontweight="bold",
         color="#69f0ae", fontfamily=FONT_FAMILY,
@@ -62,7 +62,7 @@ def run():
         xlabel="Month",
         ylabel="Average Fare ($)",
     )
-    ax.set_xticks(range(1, 9))
+    ax.set_xticks(range(1, 13))
     ax.set_xticklabels(month_names, fontsize=10)
     save_fig("monthly_fare_trend")
     print("Monthly trend plot saved")

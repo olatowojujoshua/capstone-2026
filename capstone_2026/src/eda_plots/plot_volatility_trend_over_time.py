@@ -20,10 +20,10 @@ def run():
     y_start = y[~np.isnan(y)][0]
     y_end = y[~np.isnan(y)][-1]
     if y_end > y_start:
-        trend_text = f"↑ Volatility rising ({y_start:.1f} → {y_end:.1f})"
+        trend_text = f"↑ Volatility rising ({y_start:.1f} -> {y_end:.1f})"
         trend_color = "#ff4081"
     else:
-        trend_text = f"↓ Volatility falling ({y_start:.1f} → {y_end:.1f})"
+        trend_text = f"↓ Volatility falling ({y_start:.1f} -> {y_end:.1f})"
         trend_color = "#69f0ae"
     ax.text(
         0.98, 0.95, trend_text,

@@ -49,7 +49,7 @@ Trips with non-positive values for:
 were removed, as these represent invalid or corrupted records.
 
 ### 5. Pickup Delay Sanity Filter
-Pickup delay (request → pickup) was computed as a proxy for demand–supply pressure. Delays outside the range **0–2 hours** were excluded to remove logging artifacts.
+Pickup delay (request -> pickup) was computed as a proxy for demand–supply pressure. Delays outside the range **0–2 hours** were excluded to remove logging artifacts.
 
 ### 6. Outlier Control (Winsorization)
 To limit the influence of extreme values without distorting distributions, conservative winsorization thresholds were identified at the **0.5th and 99.5th percentiles** for:
