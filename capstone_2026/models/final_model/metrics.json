@@ -1,0 +1,54 @@
+{
+  "features": [
+    "PULocationID",
+    "DOLocationID",
+    "trip_miles",
+    "trip_time",
+    "pickup_delay_sec",
+    "shared_request_flag",
+    "wav_request_flag",
+    "wav_match_flag",
+    "trip_count",
+    "avg_pickup_delay_sec"
+  ],
+  "train_months": [
+    "2021-01",
+    "2021-02",
+    "2021-03",
+    "2021-04",
+    "2021-05",
+    "2021-06",
+    "2021-07",
+    "2021-08",
+    "2021-09",
+    "2021-10"
+  ],
+  "val_month": "2021-11",
+  "test_month": "2021-12",
+  "target_transform": "none",
+  "segments": {
+    "all": {
+      "validation": {
+        "mae": 3.6480266116722317,
+        "rmse": 6.324445485128357,
+        "r2": 0.8517070765821211,
+        "p90_abs_error": 8.665721777466864,
+        "mean_y_true": 22.35455874000001,
+        "mean_y_pred": 22.60367051723216,
+        "n": 500000
+      },
+      "test": {
+        "mae": 3.400576170421586,
+        "rmse": 6.190504131193431,
+        "r2": 0.8582559676204033,
+        "p90_abs_error": 7.88163458348085,
+        "mean_y_true": 22.006731639999998,
+        "mean_y_pred": 21.890252732809856,
+        "n": 500000
+      },
+      "n_train": 5000000,
+      "n_val": 500000,
+      "n_test": 500000
+    }
+  }
+}

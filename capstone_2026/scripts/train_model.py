@@ -285,10 +285,10 @@ def parse_args():
     p.add_argument("--model_table_dir", type=str, default="data/processed/model_table")
 
     p.add_argument("--train_start", type=str, default="2021-01")
-    p.add_argument("--train_end", type=str, default="2021-08")
+    p.add_argument("--train_end", type=str, default="2021-10")
 
-    p.add_argument("--val_month", type=str, default="2021-09")
-    p.add_argument("--test_month", type=str, default="2021-10")
+    p.add_argument("--val_month", type=str, default="2021-11")
+    p.add_argument("--test_month", type=str, default="2021-12")
 
     p.add_argument("--sample_per_month", type=int, default=500000)
 
