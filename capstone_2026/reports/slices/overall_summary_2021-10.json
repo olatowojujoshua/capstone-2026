@@ -1,39 +1,42 @@
 {
   "test_month": "2021-10",
   "best_rmse": {
-    "mae": 3.5547751108931025,
-    "rmse": 6.245244659967408,
-    "r2": 0.8462065863584008,
+    "mae": 3.554775110893099,
+    "rmse": 6.2452446599674145,
+    "r2": 0.8462065863584004,
     "p90_abs_error": 8.445025977356211,
-    "mean_y_true": 22.374474459422853,
-    "mean_y_pred": 21.784528240259423,
+    "mean_y_true": 22.374474459422846,
+    "mean_y_pred": 21.784528240259416,
     "n": 16274319,
     "test_month": "2021-10",
     "sample_n": 16274319,
-    "model_name": "baseline_hgb"
+    "model_name": "baseline_hgb",
+    "model_path": "C:\\Users\\Rajan\\Documents\\CANADA\\MDA\\SEM5\\CODEBASE\\capstone-2026\\capstone_2026\\models\\baseline_hgb_model\\baseline_hgb_model.joblib"
   },
   "best_mae": {
-    "mae": 3.5387520393755034,
-    "rmse": 6.326441995876077,
-    "r2": 0.8421815097421621,
+    "mae": 3.5387520393755016,
+    "rmse": 6.3264419958760785,
+    "r2": 0.8421815097421619,
     "p90_abs_error": 8.437483281418444,
-    "mean_y_true": 22.374474459422853,
-    "mean_y_pred": 21.264938374865046,
+    "mean_y_true": 22.374474459422846,
+    "mean_y_pred": 21.26493837486503,
     "n": 16274319,
     "test_month": "2021-10",
     "sample_n": 16274319,
-    "model_name": "model_log"
+    "model_name": "model_log",
+    "model_path": "C:\\Users\\Rajan\\Documents\\CANADA\\MDA\\SEM5\\CODEBASE\\capstone-2026\\capstone_2026\\models\\model_log\\baseline_hgb_model.joblib"
   },
   "best_r2": {
-    "mae": 3.5547751108931025,
-    "rmse": 6.245244659967408,
-    "r2": 0.8462065863584008,
+    "mae": 3.554775110893099,
+    "rmse": 6.2452446599674145,
+    "r2": 0.8462065863584004,
     "p90_abs_error": 8.445025977356211,
-    "mean_y_true": 22.374474459422853,
-    "mean_y_pred": 21.784528240259423,
+    "mean_y_true": 22.374474459422846,
+    "mean_y_pred": 21.784528240259416,
     "n": 16274319,
     "test_month": "2021-10",
     "sample_n": 16274319,
-    "model_name": "baseline_hgb"
+    "model_name": "baseline_hgb",
+    "model_path": "C:\\Users\\Rajan\\Documents\\CANADA\\MDA\\SEM5\\CODEBASE\\capstone-2026\\capstone_2026\\models\\baseline_hgb_model\\baseline_hgb_model.joblib"
   }
 }

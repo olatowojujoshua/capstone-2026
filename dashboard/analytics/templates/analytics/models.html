@@ -97,6 +97,24 @@
         <canvas id="r2Chart"></canvas>
     </div>
 </div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Best Model Performance Analysis ({{ best_rmse_model }})</h2>
+        <span class="card-badge">RMSE Slices</span>
+    </div>
+
+    <div class="two-col-grid">
+        <div class="chart-container chart-lg">
+            <h3>RMSE vs. Hour of Day</h3>
+            <canvas id="sliceHourChart"></canvas>
+        </div>
+        <div class="chart-container chart-lg" style="margin-top: 2rem;">
+            <h3>RMSE vs. Trip Length</h3>
+            <canvas id="sliceTripChart"></canvas>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -150,6 +168,54 @@
         createGradientColors(7, 'green'),
         'Model',
         'R² Score',
+        true
+    );
+
+    // Slice Hour Chart (Line Chart for Time Series)
+    const ctxHour = document.getElementById('sliceHourChart').getContext('2d');
+    new Chart(ctxHour, {
+        type: 'line',
+        data: {
+            labels: {{ slice_hour_labels_json| safe }},
+        datasets: [{
+            label: 'RMSE ($)',
+            data: {{ slice_hour_rmse_json| safe }},
+        borderColor: 'rgba(6, 182, 212, 1)',
+        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true
+            }]
+        },
+        plugins: [ChartDataLabels],
+        options: {
+        ...chartDefaults(),
+        plugins: {
+            ...chartDefaults().plugins,
+            datalabels: { display: false }
+        },
+        scales: {
+            ...chartDefaults().scales,
+            x: {
+                ...chartDefaults().scales.x,
+                title: { display: true, text: 'Hour of Day', color: 'rgba(255,255,255,0.7)', font: { family: 'Inter', size: 12 } }
+            },
+            y: {
+                ...chartDefaults().scales.y,
+                title: { display: true, text: 'RMSE ($)', color: 'rgba(255,255,255,0.7)', font: { family: 'Inter', size: 12 } }
+            }
+        }
+    }
+    });
+
+    // Slice Trip Length Chart (Bar Chart for Categories)
+    createBarChart('sliceTripChart',
+        {{ slice_trip_labels_json| safe }},
+        {{ slice_trip_rmse_json| safe }},
+        'RMSE ($)',
+        createGradientColors(3, 'orange'),
+        'Trip Length Category',
+        'RMSE ($)',
         true
     );
 </script>

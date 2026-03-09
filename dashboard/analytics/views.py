@@ -18,6 +18,18 @@ def _read_json(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
+def _get_zone_map():
+    zone_file = settings.BASE_DIR.parent / 'capstone_2026' / 'data' / 'raw' / 'taxi_zone_lookup.csv'
+    zone_map = {}
+    try:
+        with open(zone_file, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                zone_map[int(row['LocationID'])] = row['Zone']
+    except Exception:
+        pass
+    return zone_map
+
 
 # ─────────────────────────────────────────────────
 # 1. Overview
@@ -110,9 +122,10 @@ def eda(request):
     dropoff_parsed.sort(key=lambda x: x['fare'], reverse=True)
     do_top10 = dropoff_parsed[:10]
     do_bottom10 = dropoff_parsed[-10:]
-    do_top_labels = [f"Zone {z['zone']}" for z in do_top10]
+    zone_map = _get_zone_map()
+    do_top_labels = [zone_map.get(z['zone'], f"Zone {z['zone']}") for z in do_top10]
     do_top_values = [z['fare'] for z in do_top10]
-    do_bottom_labels = [f"Zone {z['zone']}" for z in do_bottom10]
+    do_bottom_labels = [zone_map.get(z['zone'], f"Zone {z['zone']}") for z in do_bottom10]
     do_bottom_values = [z['fare'] for z in do_bottom10]
     context = {
         'hour_labels_json': json.dumps(hour_labels),
@@ -173,15 +186,46 @@ def model_comparison(request):
     # Best model summary
     summary_file = SLICES_DIR / 'overall_summary_2021-10.json'
     summary = _read_json(summary_file)
+    best_rmse_model_key = summary.get('best_rmse', {}).get('model_name', '')
+    
+    # Slice metrics for best model by Hour
+    slice_hour_labels = []
+    slice_hour_rmse = []
+    if best_rmse_model_key:
+        hour_file = SLICES_DIR / f'slices_hour_{best_rmse_model_key}_2021-10.csv'
+        if hour_file.exists():
+            hour_data = _read_csv(hour_file)
+            # sort by hour
+            hour_data.sort(key=lambda x: int(x['hour']))
+            slice_hour_labels = [int(r['hour']) for r in hour_data]
+            slice_hour_rmse = [round(float(r['rmse']), 3) for r in hour_data]
+            
+    # Slice metrics for best model by Trip Length
+    slice_trip_labels = []
+    slice_trip_rmse = []
+    if best_rmse_model_key:
+        trip_file = SLICES_DIR / f'slices_trip_len_bucket_{best_rmse_model_key}_2021-10.csv'
+        if trip_file.exists():
+            trip_data = _read_csv(trip_file)
+            # trip length buckets like short, medium, long
+            # custom sort: short, medium, long
+            order = {'short': 1, 'medium': 2, 'long': 3}
+            trip_data.sort(key=lambda x: order.get(x['trip_len_bucket'].lower(), 99))
+            slice_trip_labels = [r['trip_len_bucket'].title() for r in trip_data]
+            slice_trip_rmse = [round(float(r['rmse']), 3) for r in trip_data]
+
     context = {
         'models_data': models_data,
         'chart_labels_json': json.dumps(chart_labels),
         'chart_mae_json': json.dumps(chart_mae),
         'chart_rmse_json': json.dumps(chart_rmse),
         'chart_r2_json': json.dumps(chart_r2),
-        'best_rmse_model': model_names_map.get(
-            summary.get('best_rmse', {}).get('model_name', ''), ''
-        ),
+        'slice_hour_labels_json': json.dumps(slice_hour_labels),
+        'slice_hour_rmse_json': json.dumps(slice_hour_rmse),
+        'slice_trip_labels_json': json.dumps(slice_trip_labels),
+        'slice_trip_rmse_json': json.dumps(slice_trip_rmse),
+        'best_rmse_model_key': best_rmse_model_key,
+        'best_rmse_model': model_names_map.get(best_rmse_model_key, ''),
         'best_rmse_val': round(summary.get('best_rmse', {}).get('rmse', 0), 3),
         'best_mae_model': model_names_map.get(
             summary.get('best_mae', {}).get('model_name', ''), ''
@@ -217,9 +261,10 @@ def volatility(request):
     zone_parsed.sort(key=lambda x: x[1], reverse=True)
     top20 = zone_parsed[:20]
     bottom20 = zone_parsed[-20:]
-    top_labels = [f'Zone {z[0]}' for z in top20]
+    zone_map = _get_zone_map()
+    top_labels = [zone_map.get(z[0], f"Zone {z[0]}") for z in top20]
     top_values = [z[1] for z in top20]
-    bottom_labels = [f'Zone {z[0]}' for z in bottom20]
+    bottom_labels = [zone_map.get(z[0], f"Zone {z[0]}") for z in bottom20]
     bottom_values = [z[1] for z in bottom20]
     # Compute overall volatility stats
     all_cvs = [float(r['cv']) for r in vol_data]

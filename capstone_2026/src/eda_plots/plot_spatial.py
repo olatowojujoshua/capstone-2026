@@ -8,13 +8,16 @@ from src.eda_plots.plot_utils import (
 
 def run():
     df = pd.read_csv("reports/eda/pickup_zone_fares.csv")
+    zones = pd.read_csv("data/raw/taxi_zone_lookup.csv")
+    df = df.merge(zones, left_on="PULocationID", right_on="LocationID", how="left")
+    df["Zone"] = df["Zone"].fillna("Unknown")
     df = df.sort_values("mean_fare", ascending=False).head(15)
     df = df.sort_values("mean_fare", ascending=True)
     fig, ax = plt.subplots(figsize=(10, 8))
     norm = mcolors.Normalize(vmin=df["mean_fare"].min(), vmax=df["mean_fare"].max())
     colors = [CYAN_PURPLE_CMAP(norm(v)) for v in df["mean_fare"]]
     bars = ax.barh(
-        df["PULocationID"].astype(str),
+        range(len(df)),
         df["mean_fare"],
         color=colors,
         height=0.65,
@@ -51,10 +54,12 @@ def run():
         ax, fig,
         title="Top 15 Pickup Zones by Average Fare",
         xlabel="Average Fare ($)",
-        ylabel="Pickup Zone ID",
+        ylabel="Pickup Zone",
     )
     ax.grid(True, axis="x", color=GRID_COLOR, linewidth=0.4, alpha=0.5)
     ax.grid(False, axis="y")
+    ax.set_yticks(range(len(df)))
+    ax.set_yticklabels(df["Zone"])
     ax.set_xlim(0, df["mean_fare"].max() * 1.15)
     save_fig("top_zones_avg_fare")
     print("Spatial plots saved")

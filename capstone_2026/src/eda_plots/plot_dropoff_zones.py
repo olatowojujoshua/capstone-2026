@@ -9,6 +9,9 @@ from src.eda_plots.plot_utils import (
 
 def run():
     df = pd.read_csv("reports/eda/dropoff_zone_fares.csv")
+    zones = pd.read_csv("data/raw/taxi_zone_lookup.csv")
+    df = df.merge(zones, left_on="DOLocationID", right_on="LocationID", how="left")
+    df["Zone"] = df["Zone"].fillna("Unknown")
     df = df.sort_values("mean_fare", ascending=False)
     top15 = df.head(15).sort_values("mean_fare", ascending=True)
     bottom15 = df.tail(15).sort_values("mean_fare", ascending=True)
@@ -17,7 +20,7 @@ def run():
     norm_top = mcolors.Normalize(vmin=top15["mean_fare"].min(), vmax=top15["mean_fare"].max())
     colors_top = [NEON_CMAP(norm_top(v)) for v in top15["mean_fare"]]
     bars_top = ax1.barh(
-        top15["DOLocationID"].astype(str).apply(lambda z: f"Zone {z}"),
+        range(len(top15)),
         top15["mean_fare"],
         color=colors_top, height=0.65,
         edgecolor="white", linewidth=0.3,
@@ -51,11 +54,13 @@ def run():
     )
     ax1.grid(True, axis="x", color=GRID_COLOR, linewidth=0.4, alpha=0.5)
     ax1.grid(False, axis="y")
+    ax1.set_yticks(range(len(top15)))
+    ax1.set_yticklabels(top15["Zone"])
     ax1.set_xlim(0, top15["mean_fare"].max() * 1.15)
     norm_bot = mcolors.Normalize(vmin=bottom15["mean_fare"].min(), vmax=bottom15["mean_fare"].max())
     colors_bot = [CYAN_PURPLE_CMAP(norm_bot(v)) for v in bottom15["mean_fare"]]
     bars_bot = ax2.barh(
-        bottom15["DOLocationID"].astype(str).apply(lambda z: f"Zone {z}"),
+        range(len(bottom15)),
         bottom15["mean_fare"],
         color=colors_bot, height=0.65,
         edgecolor="white", linewidth=0.3,
@@ -87,6 +92,8 @@ def run():
     )
     ax2.grid(True, axis="x", color=GRID_COLOR, linewidth=0.4, alpha=0.5)
     ax2.grid(False, axis="y")
+    ax2.set_yticks(range(len(bottom15)))
+    ax2.set_yticklabels(bottom15["Zone"])
     ax2.set_xlim(0, bottom15["mean_fare"].max() * 1.25)
     fig.suptitle(
         "Dropoff Zone Fare Extremes",
