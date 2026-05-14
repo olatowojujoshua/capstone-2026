@@ -221,8 +221,8 @@
 
     // ── 6. Hourly Demand by Rain Condition (dual line) ──
     (function () {
+        const ctx = document.getElementById('hourlyDemandChart').getContext('2d');
         const hours = {{ hourly_hours_json|safe }};
-        // Build human-readable hour labels
         const hourLabels = hours.map(function (h) {
             if (h === 0) return '12 AM';
             if (h < 12) return h + ' AM';
@@ -230,25 +230,74 @@
             return (h - 12) + ' PM';
         });
 
-        createMultiLineChart('hourlyDemandChart',
-            hourLabels,
-            [
-                {
-                    label: 'No Rain',
-                    data: {{ hourly_no_rain_json|safe }},
-                    borderColor: 'rgba(6, 182, 212, 1)',
-                    bgColor: 'rgba(6, 182, 212, 0.12)',
-                },
-                {
-                    label: 'Rain',
-                    data: {{ hourly_rain_json|safe }},
-                    borderColor: 'rgba(244, 63, 94, 1)',
-                    bgColor: 'rgba(244, 63, 94, 0.10)',
-                }
-            ],
-            'Hour of Day',
-            'Avg Trip Count'
-        );
+        const noRainData = {{ hourly_no_rain_json|safe }};
+        const rainData = {{ hourly_rain_json|safe }};
+
+        const grad1 = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight);
+        grad1.addColorStop(0, 'rgba(6, 182, 212, 0.12)');
+        grad1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        const grad2 = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight);
+        grad2.addColorStop(0, 'rgba(244, 63, 94, 0.10)');
+        grad2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        const opts = chartDefaults();
+        opts.plugins.legend = {
+            display: true,
+            labels: {
+                color: 'rgba(255,255,255,0.6)',
+                font: { family: 'Inter', size: 12 },
+                padding: 16,
+                usePointStyle: true,
+                pointStyle: 'circle',
+            }
+        };
+        opts.scales.x.title = { display: true, text: 'Hour of Day', color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+        opts.scales.y.title = { display: true, text: 'Avg Trip Count', color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: hourLabels,
+                datasets: [
+                    {
+                        label: 'No Rain',
+                        data: noRainData,
+                        borderColor: 'rgba(6, 182, 212, 1)',
+                        backgroundColor: grad1,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointStyle: 'circle',
+                        pointBackgroundColor: 'rgba(6, 182, 212, 1)',
+                        pointBorderColor: 'transparent',
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: 'rgba(6, 182, 212, 1)',
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2,
+                        borderWidth: 2.5,
+                    },
+                    {
+                        label: 'Rain',
+                        data: rainData,
+                        borderColor: 'rgba(244, 63, 94, 1)',
+                        backgroundColor: grad2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointStyle: 'circle',
+                        pointBackgroundColor: 'rgba(244, 63, 94, 1)',
+                        pointBorderColor: 'transparent',
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: 'rgba(244, 63, 94, 1)',
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2,
+                        borderWidth: 2.5,
+                    }
+                ]
+            },
+            options: opts
+        });
     })();
 
     // ── 7. Top 10 Zones (horizontal bar) ─────────────
@@ -270,6 +319,9 @@
         const opts = {
             ...chartDefaults(),
             indexAxis: 'y',
+            layout: {
+                padding: { left: 20 }
+            },
             scales: {
                 x: {
                     ...chartDefaults().scales.x,
@@ -279,7 +331,8 @@
                     ...chartDefaults().scales.y,
                     ticks: {
                         ...chartDefaults().scales.y.ticks,
-                        font: { family: 'Inter', size: 10 },
+                        font: { family: 'Inter', size: 11 },
+                        padding: 8,
                     }
                 }
             }
