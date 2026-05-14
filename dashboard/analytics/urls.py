@@ -9,4 +9,5 @@ urlpatterns = [
     path('models/', views.model_comparison, name='models'),
     path('volatility/', views.volatility, name='volatility'),
     path('fairness/', views.fairness, name='fairness'),
+    path('weather/', views.weather_impact, name='weather'),
 ]

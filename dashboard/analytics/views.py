@@ -387,3 +387,102 @@ def fairness(request):
         'num_zones': n,
     }
     return render(request, 'analytics/fairness.html', context)
+
+# ─────────────────────────────────────────────────
+# 6. Weather Impact
+# ─────────────────────────────────────────────────
+def weather_impact(request):
+    zone_map = _get_zone_map()
+
+    # 1. Trip Count vs Rain  ───────────────────────
+    rain_tc = _read_csv(EDA_DIR / 'weather_trip_count_rain.csv')
+    rain_tc_labels = ['No Rain', 'Rain']
+    rain_tc_vals = [0, 0]
+    for r in rain_tc:
+        idx = int(float(r['is_raining']))
+        rain_tc_vals[idx] = round(float(r['trip_count']), 2)
+    rain_tc_pct = round((rain_tc_vals[1] - rain_tc_vals[0]) / rain_tc_vals[0] * 100, 1) if rain_tc_vals[0] else 0
+
+    # 2. Fare per Mile: Dry vs Wet  ────────────────
+    fare_wet = _read_csv(EDA_DIR / 'weather_fare_wet.csv')
+    fare_wet_labels = ['Dry', 'Wet Weather']
+    fare_wet_vals = [0, 0]
+    for r in fare_wet:
+        idx = int(float(r['is_wet_weather']))
+        fare_wet_vals[idx] = round(float(r['med_fare_per_mile']), 4)
+    fare_wet_pct = round((fare_wet_vals[1] - fare_wet_vals[0]) / fare_wet_vals[0] * 100, 1) if fare_wet_vals[0] else 0
+
+    # 3. Pickup Delay vs Rain  ─────────────────────
+    delay_rain = _read_csv(EDA_DIR / 'weather_delay_rain.csv')
+    delay_labels = ['No Rain', 'Rain']
+    delay_vals = [0, 0]
+    for r in delay_rain:
+        idx = int(float(r['is_raining']))
+        delay_vals[idx] = round(float(r['avg_pickup_delay_sec']), 2)
+    delay_pct = round((delay_vals[1] - delay_vals[0]) / delay_vals[0] * 100, 1) if delay_vals[0] else 0
+
+    # 4. Trip Count by Temperature Band  ───────────
+    temp_tc = _read_csv(EDA_DIR / 'weather_trip_count_temp.csv')
+    temp_order = ['Cold', 'Moderate', 'Hot']
+    temp_map = {r['temp_band']: round(float(r['trip_count']), 2) for r in temp_tc}
+    temp_labels = temp_order
+    temp_vals = [temp_map.get(t, 0) for t in temp_order]
+
+    # 5. Fare Volatility: Dry vs Wet  ──────────────
+    vol_wet = _read_csv(EDA_DIR / 'weather_volatility_wet.csv')
+    vol_labels = ['Dry', 'Wet Weather']
+    vol_vals = [0, 0]
+    for r in vol_wet:
+        idx = int(float(r['is_wet_weather']))
+        vol_vals[idx] = round(float(r['med_fare_per_mile_std']), 4)
+    wsr = round(vol_vals[1] / vol_vals[0], 2) if vol_vals[0] else 0
+
+    # 6. Hourly Demand by Rain Condition  ──────────
+    hourly_demand = _read_csv(EDA_DIR / 'weather_hourly_demand.csv')
+    hourly_demand.sort(key=lambda x: int(x['hour']))
+    hourly_hours = [int(r['hour']) for r in hourly_demand]
+    hourly_no_rain = [round(float(r['no_rain']), 2) for r in hourly_demand]
+    hourly_rain = [round(float(r['rain']), 2) for r in hourly_demand]
+
+    # 7. Top 10 Zones by Wet Weather Impact  ───────
+    top_zones = _read_csv(EDA_DIR / 'weather_top_zones.csv')
+    top_zones.sort(key=lambda x: float(x['wet_minus_dry']), reverse=True)
+    tz_labels = [r.get('zone_name', zone_map.get(int(float(r['PULocationID'])), f"Zone {r['PULocationID']}")) for r in top_zones]
+    tz_vals = [round(float(r['wet_minus_dry']), 4) for r in top_zones]
+
+    # Summary KPIs from eda_summary_table.csv
+    summary_rows = _read_csv(EDA_DIR / 'eda_summary_table.csv')
+    summary = summary_rows[0] if summary_rows else {}
+    weather_stress_ratio = round(float(summary.get('weather_stress_ratio', 0)), 2)
+
+    context = {
+        # 1. Trip Count vs Rain
+        'rain_tc_labels_json': json.dumps(rain_tc_labels),
+        'rain_tc_vals_json': json.dumps(rain_tc_vals),
+        'rain_tc_pct': rain_tc_pct,
+        # 2. Fare vs Wet Weather
+        'fare_wet_labels_json': json.dumps(fare_wet_labels),
+        'fare_wet_vals_json': json.dumps(fare_wet_vals),
+        'fare_wet_pct': fare_wet_pct,
+        # 3. Delay vs Rain
+        'delay_labels_json': json.dumps(delay_labels),
+        'delay_vals_json': json.dumps(delay_vals),
+        'delay_pct': delay_pct,
+        # 4. Trip Count by Temp
+        'temp_labels_json': json.dumps(temp_labels),
+        'temp_vals_json': json.dumps(temp_vals),
+        # 5. Volatility
+        'vol_labels_json': json.dumps(vol_labels),
+        'vol_vals_json': json.dumps(vol_vals),
+        'wsr': wsr,
+        # 6. Hourly Demand
+        'hourly_hours_json': json.dumps(hourly_hours),
+        'hourly_no_rain_json': json.dumps(hourly_no_rain),
+        'hourly_rain_json': json.dumps(hourly_rain),
+        # 7. Top Zones
+        'tz_labels_json': json.dumps(tz_labels),
+        'tz_vals_json': json.dumps(tz_vals),
+        # KPIs
+        'weather_stress_ratio': weather_stress_ratio,
+    }
+    return render(request, 'analytics/weather.html', context)

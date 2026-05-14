@@ -284,3 +284,55 @@ function createDoughnutChart(canvasId, labels, data) {
         }
     });
 }
+
+/**
+ * Create a multi-line chart with two datasets.
+ */
+function createMultiLineChart(canvasId, labels, datasets, xLabel, yLabel) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    const opts = chartDefaults();
+    opts.plugins.legend = {
+        display: true,
+        labels: {
+            color: 'rgba(255,255,255,0.6)',
+            font: { family: 'Inter', size: 12 },
+            padding: 16,
+            usePointStyle: true,
+            pointStyleWidth: 10,
+        }
+    };
+    if (xLabel) {
+        opts.scales.x.title = { display: true, text: xLabel, color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+    }
+    if (yLabel) {
+        opts.scales.y.title = { display: true, text: yLabel, color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+    }
+
+    const chartDatasets = datasets.map(function (ds) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.clientHeight);
+        gradient.addColorStop(0, ds.bgColor || 'rgba(99, 102, 241, 0.15)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        return {
+            label: ds.label,
+            data: ds.data,
+            borderColor: ds.borderColor,
+            backgroundColor: gradient,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointBackgroundColor: ds.borderColor,
+            pointBorderColor: 'transparent',
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: ds.borderColor,
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+            borderWidth: 2.5,
+        };
+    });
+
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: chartDatasets },
+        options: opts
+    });
+}

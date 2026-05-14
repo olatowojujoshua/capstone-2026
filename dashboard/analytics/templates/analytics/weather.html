@@ -1,0 +1,315 @@
+{% extends "analytics/base.html" %}
+{% block title %}Weather Impact{% endblock %}
+{% block page_title %}Weather Impact Analysis{% endblock %}
+{% block page_subtitle %}How rain, wet weather, and temperature affect ride demand, pricing, delays, and volatility{% endblock %}
+
+{% block content %}
+<!-- KPI Summary Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon cyan">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
+                <line x1="12" y1="14" x2="12" y2="22" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ rain_tc_pct }}%</span>
+            <span class="kpi-label">Trip Count Δ (Rain)</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ fare_wet_pct }}%</span>
+            <span class="kpi-label">Fare/Mile Δ (Wet)</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ delay_pct }}%</span>
+            <span class="kpi-label">Pickup Delay Δ (Rain)</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon orange">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ weather_stress_ratio }}×</span>
+            <span class="kpi-label">Weather Stress Ratio</span>
+        </div>
+    </div>
+</div>
+
+<!-- Row 1: Trip Count vs Rain  |  Fare vs Wet Weather -->
+<div class="grid-2col">
+    <div class="card">
+        <div class="card-header">
+            <h2>Average Trip Count: Rain vs No Rain</h2>
+            <span class="card-badge">Demand Impact</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="tripCountRainChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Fare per Mile: Dry vs Wet Weather</h2>
+            <span class="card-badge">Pricing Impact</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="fareWetChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Delay vs Rain  |  Trip Count by Temperature -->
+<div class="grid-2col">
+    <div class="card">
+        <div class="card-header">
+            <h2>Pickup Delay: Rain vs No Rain</h2>
+            <span class="card-badge">Wait Time Impact</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="delayRainChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Trip Count by Temperature Band</h2>
+            <span class="card-badge">Cold · Moderate · Hot</span>
+        </div>
+        <div class="chart-container chart-lg">
+            <canvas id="tripCountTempChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Volatility Dry vs Wet (full width) -->
+<div class="card">
+    <div class="card-header">
+        <h2>Price Volatility: Dry vs Wet Weather</h2>
+        <span class="card-badge">Std Dev of Fare / Mile</span>
+    </div>
+    <div class="chart-container">
+        <canvas id="volatilityWetChart"></canvas>
+    </div>
+</div>
+
+<!-- Row 4: Hourly Demand by Rain Condition (full width) -->
+<div class="card">
+    <div class="card-header">
+        <h2>Average Trip Count by Hour &amp; Rain Condition</h2>
+        <span class="card-badge">24-Hour Dual Trend</span>
+    </div>
+    <div class="chart-container chart-xl">
+        <canvas id="hourlyDemandChart"></canvas>
+    </div>
+</div>
+
+<!-- Row 5: Top 10 Zones (full width) -->
+<div class="card">
+    <div class="card-header">
+        <h2>Top 10 Zones Most Affected by Wet Weather</h2>
+        <span class="card-badge">Fare Increase: Wet − Dry ($/mile)</span>
+    </div>
+    <div class="chart-container chart-xl">
+        <canvas id="topZonesWeatherChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ── 1. Trip Count vs Rain (bar) ──────────────────
+    createBarChart('tripCountRainChart',
+        {{ rain_tc_labels_json|safe }},
+        {{ rain_tc_vals_json|safe }},
+        'Avg Trip Count',
+        ['rgba(6, 182, 212, 0.8)', 'rgba(244, 63, 94, 0.8)'],
+        'Weather Condition',
+        'Avg Trip Count',
+        true
+    );
+
+    // ── 2. Fare vs Wet Weather (bar) ─────────────────
+    createBarChart('fareWetChart',
+        {{ fare_wet_labels_json|safe }},
+        {{ fare_wet_vals_json|safe }},
+        'Avg Fare / Mile ($)',
+        ['rgba(6, 182, 212, 0.8)', 'rgba(244, 63, 94, 0.8)'],
+        'Weather Condition',
+        'Avg Median Fare / Mile ($)',
+        true
+    );
+
+    // ── 3. Pickup Delay vs Rain (bar) ────────────────
+    createBarChart('delayRainChart',
+        {{ delay_labels_json|safe }},
+        {{ delay_vals_json|safe }},
+        'Avg Pickup Delay (sec)',
+        ['rgba(6, 182, 212, 0.8)', 'rgba(244, 63, 94, 0.8)'],
+        'Weather Condition',
+        'Avg Pickup Delay (sec)',
+        true
+    );
+
+    // ── 4. Trip Count by Temperature Band (bar) ──────
+    createBarChart('tripCountTempChart',
+        {{ temp_labels_json|safe }},
+        {{ temp_vals_json|safe }},
+        'Avg Trip Count',
+        ['rgba(64, 196, 255, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(244, 63, 94, 0.8)'],
+        'Temperature Band',
+        'Avg Trip Count',
+        true
+    );
+
+    // ── 5. Volatility: Dry vs Wet (bar) ──────────────
+    (function () {
+        const ctx = document.getElementById('volatilityWetChart').getContext('2d');
+        const labels = {{ vol_labels_json|safe }};
+        const data = {{ vol_vals_json|safe }};
+        const colors = ['rgba(6, 182, 212, 0.8)', 'rgba(244, 63, 94, 0.8)'];
+        const opts = chartDefaults();
+        opts.scales.x.title = { display: true, text: 'Weather Condition', color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+        opts.scales.y.title = { display: true, text: 'Std Dev of Fare / Mile ($)', color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } };
+        opts.plugins.datalabels = {
+            display: true,
+            color: 'rgba(255,255,255,0.85)',
+            anchor: 'end',
+            align: 'top',
+            font: { family: 'Inter', size: 11, weight: '600' },
+            formatter: function (value) { return '$' + value.toFixed(4); }
+        };
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Fare Std Dev ($/mile)',
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    maxBarThickness: 80,
+                }]
+            },
+            plugins: [ChartDataLabels],
+            options: opts
+        });
+    })();
+
+    // ── 6. Hourly Demand by Rain Condition (dual line) ──
+    (function () {
+        const hours = {{ hourly_hours_json|safe }};
+        // Build human-readable hour labels
+        const hourLabels = hours.map(function (h) {
+            if (h === 0) return '12 AM';
+            if (h < 12) return h + ' AM';
+            if (h === 12) return '12 PM';
+            return (h - 12) + ' PM';
+        });
+
+        createMultiLineChart('hourlyDemandChart',
+            hourLabels,
+            [
+                {
+                    label: 'No Rain',
+                    data: {{ hourly_no_rain_json|safe }},
+                    borderColor: 'rgba(6, 182, 212, 1)',
+                    bgColor: 'rgba(6, 182, 212, 0.12)',
+                },
+                {
+                    label: 'Rain',
+                    data: {{ hourly_rain_json|safe }},
+                    borderColor: 'rgba(244, 63, 94, 1)',
+                    bgColor: 'rgba(244, 63, 94, 0.10)',
+                }
+            ],
+            'Hour of Day',
+            'Avg Trip Count'
+        );
+    })();
+
+    // ── 7. Top 10 Zones (horizontal bar) ─────────────
+    (function () {
+        const ctx = document.getElementById('topZonesWeatherChart').getContext('2d');
+        const labels = {{ tz_labels_json|safe }};
+        const data = {{ tz_vals_json|safe }};
+
+        // Generate gradient colors from cyan to pink
+        const n = data.length;
+        const colors = data.map(function (v, i) {
+            const t = i / Math.max(n - 1, 1);
+            const r = Math.round(6 + (244 - 6) * t);
+            const g = Math.round(182 + (63 - 182) * t);
+            const b = Math.round(212 + (94 - 212) * t);
+            return 'rgba(' + r + ',' + g + ',' + b + ', 0.8)';
+        });
+
+        const opts = {
+            ...chartDefaults(),
+            indexAxis: 'y',
+            scales: {
+                x: {
+                    ...chartDefaults().scales.x,
+                    title: { display: true, text: 'Fare Increase: Wet − Dry ($/mile)', color: 'rgba(255,255,255,0.6)', font: { size: 12, family: 'Inter' } }
+                },
+                y: {
+                    ...chartDefaults().scales.y,
+                    ticks: {
+                        ...chartDefaults().scales.y.ticks,
+                        font: { family: 'Inter', size: 10 },
+                    }
+                }
+            }
+        };
+        opts.plugins.datalabels = {
+            display: true,
+            color: 'rgba(255,255,255,0.85)',
+            anchor: 'end',
+            align: 'start',
+            font: { family: 'Inter', size: 10, weight: '600' },
+            formatter: function (value) { return '+$' + value.toFixed(2); }
+        };
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Fare Increase ($/mile)',
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    borderSkipped: false,
+                }]
+            },
+            plugins: [ChartDataLabels],
+            options: opts
+        });
+    })();
+</script>
+{% endblock %}
